@@ -1,0 +1,50 @@
+// compass dependancies
+@import "compass/css3/background-size";
+
+// create two sprite images
+@import "mySpriteFolder/*.png";
+@import "myHighresSpriteFolder/*.png";
+
+// spacing between the images in the generated sprite
+$mySpriteFolder-spacing: 15px;
+$myHighresSpriteFolder-spacing: $mySpriteFolder-spacing * 2;
+
+// media query used to determine when to display highres bg images
+$sprites-media-query: "(-webkit-min-device-pixel-ratio: 1.2), (min--moz-device-pixel-ratio: 1.2), (-o-min-device-pixel-ratio: 3/2), (min-device-pixel-ratio: 1.2)";
+
+// background sprite plus highres background sprite mixin:
+// $name: name of sprite image. note the image names must be indentical in both folders
+// $offset-x and $offset-y: tweaks to the position of the image. pixel values are the most reliable. large offsets require larger file spacing. defaults to 0
+// $highres-version: true or false, whether to include a highres counterpart
+// $highres-offset-x and $highres-offset-y: sometimes due to subpixel rounding errors you want to tweak the highres image's display somewhat differently. defaults to same values as regular offsets
+@mixin bg-sprite($name, $offset-x: 0, $offset-y:0, $highres-version: false, $highres-offset-x: $offset-x, $highres-offset-y: $offset-y ) {
+
+    // these three handle the regular sprite image
+    // declared independantly so as to not clobber e.g. a background-color declaration
+    background-image: sprite-url($mySpriteFolder-sprites);
+    background-position: sprite-position($mySpriteFolder-sprites, $name, $offset-x, $offset-y);
+    background-repeat: no-repeat;
+
+    @if $highres-version == true {
+
+        // double the highres offsets so they act correctly on the larger version of the image before we shrink it later with background-size
+        $highres-offset-x: $highres-offset-x * 2;
+        $highres-offset-y: $highres-offset-y * 2;
+
+        // use the media query value to determine when the highres version should be displayed
+        @media #{$sprites-media-query} {
+            background-image: sprite-url($myHighresSpriteFolder-sprites);
+            // each nth function unpacks one of the co-ordinate positions (x and then y) and halves it so that the positioning does the right thing
+            background-position: round(nth(sprite-position($myHighresSpriteFolder-sprites, $name, $highres-offset-x, $highres-offset-y), 1) / 2) round(nth(sprite-position($myHighresSpriteFolder-sprites, $name, $highres-offset-x, $highres-offset-y), 2) / 2);
+            // get the path to the generated image, calculate its width, and halve it
+            @include background-size(round(image-width(sprite-path($myHighresSpriteFolder-sprites)) / 2) auto);
+        }
+    }
+}
+
+// the mixin above probably wants to be in its own file somewhere out of the way.
+// calling the mixin from your regular scss is now trivial:
+.example {
+    padding: 2px 5px 2px 25px;
+    @include bg-sprite(green-tick, 5px, 3px, true);
+}
